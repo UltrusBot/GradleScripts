@@ -91,6 +91,7 @@ configure<com.matthewprenger.cursegradle.CurseExtension> {
         changelog = File("$rootDir/CHANGELOG.md").readText()
         releaseType = releaseFileType
         minecraftVersions.split(",").map { it.trim() }.forEach { addGameVersion(it) }
+        modLoaders.split(",").map { it.trim() }.forEach { addGameVersion(it) }
         mainArtifact(tasks.get("remapJar"))
         mainArtifact.displayName = "$modDisplayName v${mod_version}"
         relations(closureOf<com.matthewprenger.cursegradle.CurseRelation>{
