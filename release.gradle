@@ -1,0 +1,172 @@
+
+enum LoaderType {
+    FABRIC("fabric", "Fabric"),
+    QUILT("quilt", "Quilt"),
+    FORGE("forge", "Forge");
+
+    String modrinthName;
+    String curseforgeName;
+
+    LoaderType(String modrinthName, String curseforgeName) {
+        this.modrinthName = modrinthName;
+        this.curseforgeName = curseforgeName;
+    }
+
+}
+class ModReleaseMetadata {
+    String releaseDisplayName;
+    File changelogFile;
+    String[] minecraftVersions;
+    LoaderType[] modLoaders;
+    String mainBuildTask;
+    String[] additionalBuildTasks;
+    String versionTag;
+    boolean isTest = false;
+
+    String cfToken;
+    String mrToken;
+    String ghToken;
+    static ModReleaseMetadata create(
+            String releaseDisplayName,
+            File changelogFile,
+            ArrayList<String> minecraftVersions,
+            ArrayList<String> modLoaders,
+            String mainBuildTask,
+            ArrayList<String> additionalBuildTasks,
+            String versionTag,
+            boolean isTest,
+            String CF_TOKEN,
+            String MR_TOKEN,
+            String GH_TOKEN) {
+        var metadata = new ModReleaseMetadata()
+        metadata.releaseDisplayName = releaseDisplayName
+        metadata.changelogFile = changelogFile
+        metadata.minecraftVersions = minecraftVersions
+        metadata.modLoaders = modLoaders.collect { LoaderType.valueOf(it.toUpperCase()) }
+        metadata.mainBuildTask = mainBuildTask
+        metadata.additionalBuildTasks = additionalBuildTasks
+        metadata.versionTag = versionTag
+        metadata.isTest = isTest
+        metadata.cfToken = CF_TOKEN
+        metadata.mrToken = MR_TOKEN
+        metadata.ghToken = GH_TOKEN
+        return metadata
+    }
+}
+
+ext.createModReleaseMetadata = {
+    String releaseDisplayName,
+    File changelogFile,
+    ArrayList<String> minecraftVersions,
+    ArrayList<String> modLoaders,
+    String mainBuildTask,
+    ArrayList<String> additionalBuildTasks,
+    String versionTag,
+    boolean isTest = false,
+    String CF_TOKEN = System.getenv("CF_API_KEY"),
+    String MR_TOKEN = System.getenv("MODRINTH_TOKEN"),
+    String GH_TOKEN = System.getenv("GH_TOKEN")
+    ->
+    return ModReleaseMetadata.create(
+            releaseDisplayName,
+            changelogFile,
+            minecraftVersions,
+            modLoaders,
+            mainBuildTask,
+            additionalBuildTasks,
+            versionTag,
+            isTest,
+            CF_TOKEN,
+            MR_TOKEN,
+            GH_TOKEN
+    )
+}
+ext.modrinthInfo = {ModReleaseMetadata modData, String modrinthProjectId, ArrayList<String> requiredProjects = [], ArrayList<String> optionalProjects = [], ArrayList<String> incompatibleProjects = [], ArrayList<String> embeddedProjects = [] ->
+    modrinth {
+        if (modData.mrToken != null) {
+            token = modData.mrToken
+        }
+        projectId = modrinthProjectId
+        versionType = "release"
+        uploadFile = tasks.getByName(modData.mainBuildTask)
+        changelog = modData.changelogFile.getText('UTF-8')
+        versionNumber = modData.versionTag
+        versionName = modData.releaseDisplayName
+        gameVersions = modData.minecraftVersions.toList()
+        loaders = modData.modLoaders.collect { it.modrinthName }.asList()
+        dependencies {
+            requiredProjects.collect { required.project(it) }
+            optionalProjects.collect { optional.project(it) }
+            incompatibleProjects.collect { incompatible.project(it) }
+            embeddedProjects.collect { embedded.project(it) }
+        }
+        debugMode = modData.isTest
+    }
+}
+ext.githubInfo = {ModReleaseMetadata modData, String githubOwner, String githubRepo, String branch ->
+    var githubTasks = []
+    githubTasks.add(tasks.getByName(modData.mainBuildTask))
+    for (taskName in modData.additionalBuildTasks) {
+        githubTasks.add(tasks.getByName(taskName))
+    }
+    githubRelease {
+        if (modData.ghToken != null) {
+            authorization = "Token ${modData.ghToken}"
+        }
+        owner = githubOwner
+        repo = githubRepo
+        targetCommitish = branch
+        tagName = modData.versionTag
+        releaseName = modData.releaseDisplayName
+        body = modData.changelogFile.getText('UTF-8')
+        releaseAssets = githubTasks
+        dryRun = modData.isTest
+    }
+}
+ext.curseforgeInfo = {ModReleaseMetadata modData, String curseforgeProjectId, ArrayList<String> embeddedLibraries = [], ArrayList<String> requiredLibraries = [], ArrayList<String> optionalLibraries = [] ->
+    curseforge {
+        if (modData.cfToken != null) {
+            apiKey = modData.cfToken
+        }
+        project {
+            id = curseforgeProjectId
+            changelogType = "markdown"
+            changelog = modData.changelogFile.getText('UTF-8')
+            releaseType =  "release"
+            for (version in modData.minecraftVersions) {
+                addGameVersion version
+            }
+            for (loader in modData.modLoaders) {
+                addGameVersion loader.curseforgeName
+            }
+            relations {
+                requiredLibraries.collect { embeddedLibrary(it) }
+                optionalLibraries.collect { optionalDependency(it) }
+                embeddedLibraries.collect { embeddedLibrary(it) }
+            }
+            mainArtifact(tasks.getByName(modData.mainBuildTask)) {
+                displayName = modData.releaseDisplayName
+            }
+            debug(modData.isTest)
+        }
+    }
+}
+
+/**
+ **Example usage:**
+ > in build.gradle
+ var mod = createModReleaseMetadata(
+ "Spleaves $project.version Fabric/Quilt",
+ file("$rootDir/CHANGELOG.md"),
+ ["1.19.2"],
+ ["fabric", "quilt"],
+ "remapJar",
+ ["sourcesJar", "javadocJar"],
+ "v${project.version}-fabric",
+ true
+ )
+ modrinthInfo(mod, "spleaves")
+ githubInfo(mod, "UltrusBot", "Spleaves", "1.19.2")
+ curseforgeInfo(mod, "856291")
+
+ */
