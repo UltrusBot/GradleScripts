@@ -94,11 +94,13 @@ ext.modrinthInfo = {ModReleaseMetadata modData, String modrinthProjectId, ArrayL
         versionName = modData.releaseDisplayName
         gameVersions = modData.minecraftVersions.toList()
         loaders = modData.modLoaders.collect { it.modrinthName }.asList()
-        dependencies {
-            requiredProjects.collect { required.project(it) }
-            optionalProjects.collect { optional.project(it) }
-            incompatibleProjects.collect { incompatible.project(it) }
-            embeddedProjects.collect { embedded.project(it) }
+        if (requiredProjects.size() > 0 || optionalProjects.size() > 0 || incompatibleProjects.size() > 0 || embeddedProjects.size() > 0) {
+            dependencies {
+                requiredProjects.collect { required.project(it) }
+                optionalProjects.collect { optional.project(it) }
+                incompatibleProjects.collect { incompatible.project(it) }
+                embeddedProjects.collect { embedded.project(it) }
+            }
         }
         debugMode = modData.isTest
     }
