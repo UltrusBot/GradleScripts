@@ -22,6 +22,7 @@ class ModReleaseMetadata {
     String[] additionalBuildTasks;
     String versionTag;
     boolean isTest = false;
+    String releaseType;
 
     String cfToken;
     String mrToken;
@@ -37,7 +38,8 @@ class ModReleaseMetadata {
             boolean isTest,
             String CF_TOKEN,
             String MR_TOKEN,
-            String GH_TOKEN) {
+            String GH_TOKEN,
+            String releaseType) {
         var metadata = new ModReleaseMetadata()
         metadata.releaseDisplayName = releaseDisplayName
         metadata.changelogFile = changelogFile
@@ -50,6 +52,7 @@ class ModReleaseMetadata {
         metadata.cfToken = CF_TOKEN
         metadata.mrToken = MR_TOKEN
         metadata.ghToken = GH_TOKEN
+        metadata.releaseType = releaseType
         return metadata
     }
 }
@@ -63,6 +66,7 @@ ext.createModReleaseMetadata = {
     ArrayList<String> additionalBuildTasks,
     String versionTag,
     boolean isTest = false,
+    String releaseType = "release",
     String CF_TOKEN = System.getenv("CF_API_KEY"),
     String MR_TOKEN = System.getenv("MODRINTH_TOKEN"),
     String GH_TOKEN = System.getenv("GH_TOKEN")
@@ -78,7 +82,8 @@ ext.createModReleaseMetadata = {
             isTest,
             CF_TOKEN,
             MR_TOKEN,
-            GH_TOKEN
+            GH_TOKEN,
+            releaseType
     )
 }
 ext.modrinthInfo = {ModReleaseMetadata modData, String modrinthProjectId, ArrayList<String> requiredProjects = [], ArrayList<String> optionalProjects = [], ArrayList<String> incompatibleProjects = [], ArrayList<String> embeddedProjects = [] ->
@@ -87,7 +92,7 @@ ext.modrinthInfo = {ModReleaseMetadata modData, String modrinthProjectId, ArrayL
             token = modData.mrToken
         }
         projectId = modrinthProjectId
-        versionType = "release"
+        versionType = modData.releaseType
         uploadFile = tasks.getByName(modData.mainBuildTask)
         changelog = modData.changelogFile.getText('UTF-8')
         versionNumber = modData.versionTag
@@ -134,7 +139,7 @@ ext.curseforgeInfo = {ModReleaseMetadata modData, String curseforgeProjectId, Ar
             id = curseforgeProjectId
             changelogType = "markdown"
             changelog = modData.changelogFile.getText('UTF-8')
-            releaseType =  "release"
+            releaseType = modData.releaseType
             for (version in modData.minecraftVersions) {
                 addGameVersion version
             }
