@@ -147,9 +147,15 @@ ext.curseforgeInfo = {ModReleaseMetadata modData, String curseforgeProjectId, Ar
                 addGameVersion loader.curseforgeName
             }
             relations {
-                requiredLibraries.collect { embeddedLibrary(it) }
-                optionalLibraries.collect { optionalDependency(it) }
-                embeddedLibraries.collect { embeddedLibrary(it) }
+                if (requiredLibraries.size() > 0) {
+                    requiredLibraries.collect { embeddedLibrary(it) }
+                }
+                if (optionalLibraries.size() > 0) {
+                    optionalLibraries.collect { optionalDependency(it) }
+                }
+                if (embeddedLibraries.size() > 0) {
+                    embeddedLibraries.collect { embeddedLibrary(it) }
+                }
             }
             mainArtifact(tasks.getByName(modData.mainBuildTask)) {
                 displayName = modData.releaseDisplayName
