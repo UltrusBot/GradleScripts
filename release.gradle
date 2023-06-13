@@ -148,7 +148,7 @@ ext.curseforgeInfo = {ModReleaseMetadata modData, String curseforgeProjectId, Ar
             }
             relations {
                 if (requiredLibraries.size() > 0) {
-                    requiredLibraries.collect { embeddedLibrary(it) }
+                    requiredLibraries.collect { requiredLibrary(it) }
                 }
                 if (optionalLibraries.size() > 0) {
                     optionalLibraries.collect { optionalDependency(it) }
