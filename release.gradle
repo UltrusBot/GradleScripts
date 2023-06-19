@@ -131,37 +131,31 @@ ext.githubInfo = {ModReleaseMetadata modData, String githubOwner, String githubR
     }
 }
 ext.curseforgeInfo = {ModReleaseMetadata modData, String curseforgeProjectId, ArrayList<String> embeddedLibraries = [], ArrayList<String> requiredLibraries = [], ArrayList<String> optionalLibraries = [] ->
-    curseforge {
+    task publishCurseForge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge) {
         if (modData.cfToken != null) {
-            apiKey = modData.cfToken
+            apiToken = modData.cfToken
         }
-        project {
-            id = curseforgeProjectId
-            changelogType = "markdown"
-            changelog = modData.changelogFile.getText('UTF-8')
-            releaseType = modData.releaseType
-            for (version in modData.minecraftVersions) {
-                addGameVersion version
-            }
-            for (loader in modData.modLoaders) {
-                addGameVersion loader.curseforgeName
-            }
-            relations {
-                if (requiredLibraries.size() > 0) {
-                    requiredLibraries.collect { requiredLibrary(it) }
-                }
-                if (optionalLibraries.size() > 0) {
-                    optionalLibraries.collect { optionalDependency(it) }
-                }
-                if (embeddedLibraries.size() > 0) {
-                    embeddedLibraries.collect { embeddedLibrary(it) }
-                }
-            }
-            mainArtifact(tasks.getByName(modData.mainBuildTask)) {
-                displayName = modData.releaseDisplayName
-            }
-            debug(modData.isTest)
+        def mainFile = upload(curseforgeProjectId, tasks.getByName(modData.mainBuildTask))
+        mainFile.releaseType = modData.releaseType
+        mainFile.changelog = modData.changelogFile.getText('UTF-8')
+        mainFile.changelogType = 'markdown'
+        for (version in modData.minecraftVersions) {
+            mainFile.addGameVersion(version)
         }
+        for (loader in modData.modLoaders) {
+            mainFile.addModLoader(loader.curseforgeName)
+        }
+        mainFile.displayName = modData.releaseDisplayName
+        if (requiredLibraries.size() > 0) {
+            requiredLibraries.collect { mainFile.addRequirement(it) }
+        }
+        if (optionalLibraries.size() > 0) {
+            optionalLibraries.collect { mainFile.addOptional(it) }
+        }
+        if (embeddedLibraries.size() > 0) {
+            embeddedLibraries.collect { mainFile.addEmbedded(it) }
+        }
+        debugMode = modData.isTest
     }
 }
 
