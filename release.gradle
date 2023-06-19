@@ -1,4 +1,3 @@
-
 enum LoaderType {
     FABRIC("fabric", "Fabric"),
     QUILT("quilt", "Quilt"),
@@ -70,21 +69,21 @@ ext.createModReleaseMetadata = {
     String CF_TOKEN = System.getenv("CF_API_KEY"),
     String MR_TOKEN = System.getenv("MODRINTH_TOKEN"),
     String GH_TOKEN = System.getenv("GH_TOKEN")
-    ->
-    return ModReleaseMetadata.create(
-            releaseDisplayName,
-            changelogFile,
-            minecraftVersions,
-            modLoaders,
-            mainBuildTask,
-            additionalBuildTasks,
-            versionTag,
-            isTest,
-            CF_TOKEN,
-            MR_TOKEN,
-            GH_TOKEN,
-            releaseType
-    )
+        ->
+        return ModReleaseMetadata.create(
+                releaseDisplayName,
+                changelogFile,
+                minecraftVersions,
+                modLoaders,
+                mainBuildTask,
+                additionalBuildTasks,
+                versionTag,
+                isTest,
+                CF_TOKEN,
+                MR_TOKEN,
+                GH_TOKEN,
+                releaseType
+        )
 }
 ext.modrinthInfo = {ModReleaseMetadata modData, String modrinthProjectId, ArrayList<String> requiredProjects = [], ArrayList<String> optionalProjects = [], ArrayList<String> incompatibleProjects = [], ArrayList<String> embeddedProjects = [] ->
     modrinth {
@@ -130,8 +129,9 @@ ext.githubInfo = {ModReleaseMetadata modData, String githubOwner, String githubR
         dryRun = modData.isTest
     }
 }
-ext.curseforgeInfo = {ModReleaseMetadata modData, String curseforgeProjectId, ArrayList<String> embeddedLibraries = [], ArrayList<String> requiredLibraries = [], ArrayList<String> optionalLibraries = [] ->
-    task publishCurseForge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge) {
+// Yes, the passed object thing is cursed, but it works. Should probably figure out a better solution at some point.
+ext.curseforgeInfo = {ModReleaseMetadata modData, Object taskType, String curseforgeProjectId, ArrayList<String> embeddedLibraries = [], ArrayList<String> requiredLibraries = [], ArrayList<String> optionalLibraries = [] ->
+    task publishCurseForge(type: taskType) {
         if (modData.cfToken != null) {
             apiToken = modData.cfToken
         }
@@ -174,6 +174,6 @@ ext.curseforgeInfo = {ModReleaseMetadata modData, String curseforgeProjectId, Ar
  )
  modrinthInfo(mod, "spleaves")
  githubInfo(mod, "UltrusBot", "Spleaves", "1.19.2")
- curseforgeInfo(mod, "856291")
+ curseforgeInfo(mod, TaskPublishCurseForge, "856291")
 
  */
